@@ -1,12 +1,12 @@
 # POC DocumentDB
 
-![Logo del Proyecto](ruta/a/tu/logo.png)
+![Logo del Proyecto](./images/documentdb.png)
 
-## Descripción
+### Descripción
 
 Prueba de concepto para migrar Mongo a DocumentDB.
 
-## Tabla de Contenidos
+### Tabla de Contenidos
 
 1. [Instalación](#instalación)
 2. [Uso](#uso)
@@ -20,14 +20,19 @@ Prueba de concepto para migrar Mongo a DocumentDB.
 
 Instrucciones sobre cómo instalar tu proyecto. Puede incluir comandos de terminal y dependencias necesarias.
 
+
+### Clonar el repositorio
 ```bash
-# Clonar el repositorio
 git clone https://github.com/tuusuario/tu-repositorio.git
+```
 
-# Entrar al directorio del proyecto
+### Entrar al directorio del proyecto
+```
 cd tu-repositorio
+```
+### Instalar dependencias
 
-# Instalar dependencias
+```
 npm install
 
 .aws/credentials
@@ -35,7 +40,7 @@ npm install
 aws_access_key_id = AKIAXC2ZDBBDTKF..
 aws_secret_access_key = b6jQ9uABEiKX...
 
-🚀 @ ~/space/lambda_nestjs/nestjs-documentdb  ~ main  > aws configure
+../lambda_nestjs/nestjs-documentdb  ~ main  > aws configure
 AWS Access Key ID [****************JJQ3]:
 AWS Secret Access Key [****************7wUC]:
 Default region name [us-east-1]:
@@ -47,10 +52,11 @@ npm run build
 sam build -t infra.yaml
 
 sam deploy --guided
+```
 
-Preview
 
 CloudFormation stack changeset
+```
 ---------------------------------------------------------------------------------------------------
 Operation                      LogicalResourceId              ResourceType                   Replacement
 ---------------------------------------------------------------------------------------------------
@@ -65,9 +71,10 @@ Operation                      LogicalResourceId              ResourceType      
 + Add                          ServerlessRestApiProdStage     AWS::ApiGateway::Stage         N/A
 + Add                          ServerlessRestApi              AWS::ApiGateway::RestApi       N/A
 ---------------------------------------------------------------------------------------------------
-
+```
 
 CloudFormation outputs from deployed stack
+```
 ----------------------------------------------------------------------------------------------------------------------------
 Outputs
 ----------------------------------------------------------------------------------------------------------------------------
@@ -79,16 +86,22 @@ Key                 NestjsDocumentDBApi
 Description         API Gateway endpoint URL for Prod environment
 Value               https://ihq7873uh3.execute-api.us-east-1.amazonaws.com/Prod/
 ----------------------------------------------------------------------------------------------------------------------------
+```
 
+## Uso
 
-# Descargue el certificado de entidad de certificación (CA) de Amazon DocumentDB necesario para autenticarse en su clúster
+### Descargue el certificado de entidad de certificación (CA) de Amazon DocumentDB necesario para autenticarse en su clúster
 
+```shell
 wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+```
+### Conectar a este clúster con el shell mongo
 
-#Conectar a este clúster con el shell mongo
-
+```shell
 mongo --ssl --host documentdb-cluster.cluster-cnw2o40m2v0e.us-east-1.docdb.amazonaws.com:27017 --sslCAFile global-bundle.pem --username dbadmin --password Password123
+```
+### Conectar a este clúster con una aplicación
 
-# Conectar a este clúster con una aplicación
-
+```shell
 mongodb://dbadmin:Password123@documentdb-cluster.cluster-cnw2o40m2v0e.us-east-1.docdb.amazonaws.com:27017/?tls=true&tlsCAFile=global-bundle.pem&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false
+```
