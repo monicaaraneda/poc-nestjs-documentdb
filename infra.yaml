@@ -1,0 +1,118 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  # Crear el clúster de DocumentDB
+  DocumentDBCluster:
+    Type: AWS::DocDB::DBCluster
+    Properties:
+      MasterUsername: dbadmin
+      MasterUserPassword: Password123
+      DBClusterIdentifier: documentdb-cluster
+      BackupRetentionPeriod: 1
+      PreferredBackupWindow: 07:34-08:04
+      PreferredMaintenanceWindow: sun:23:45-mon:00:15
+      VpcSecurityGroupIds:
+        - !GetAtt DocumentDBSecurityGroup.GroupId
+      DBSubnetGroupName: !Ref DocumentDBSubnetGroup
+
+  # Crear la instancia de DocumentDB
+  DocumentDBInstance:
+    Type: AWS::DocDB::DBInstance
+    Properties:
+      DBClusterIdentifier: !Ref DocumentDBCluster
+      DBInstanceClass: db.r5.large
+      DBInstanceIdentifier: documentdb-instance
+
+  # Grupo de subredes para el clúster de DocumentDB
+  DocumentDBSubnetGroup:
+    Type: AWS::DocDB::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: "Subnet group for DocumentDB"
+      SubnetIds:
+        - subnet-0b3b8dcecdd40ef1e
+        - subnet-0619f2845a9d52bc6
+
+  # Grupo de seguridad para DocumentDB
+  DocumentDBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Security group for DocumentDB"
+      VpcId: vpc-0c9a08f4fa5401364
+
+  # Rol de IAM para la función Lambda
+  NestjsDocumentDBFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaBasicExecution
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+        - PolicyName: DocumentDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - docdb:DescribeDBClusters
+                  - docdb:DescribeDBInstances
+                  - docdb:ListTagsForResource
+                Resource: '*'
+        - PolicyName: LambdaEC2Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DetachNetworkInterface
+                  - ec2:DeleteNetworkInterface
+                Resource: '*'
+
+  # Función Lambda de NestJS
+  NestjsDocumentDBFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/main.handler
+      Runtime: nodejs20.x
+      MemorySize: 128
+      Timeout: 60  # Incrementar el tiempo de espera a 60 segundos
+      Role: !GetAtt NestjsDocumentDBFunctionRole.Arn
+      Environment:
+        Variables:
+          MONGODB_URI: !Sub mongodb://dbadmin:Password123@${DocumentDBCluster.Endpoint}:27017/mydatabase?tls=true&tlsCAFile=global-bundle.pem&retryWrites=false
+      VpcConfig:
+        SubnetIds:
+          - subnet-0b3b8dcecdd40ef1e
+          - subnet-0619f2845a9d52bc6
+        SecurityGroupIds:
+          - !GetAtt DocumentDBSecurityGroup.GroupId
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+
+Outputs:
+  NestjsDocumentDBApi:
+    Description: "API Gateway endpoint URL for Prod environment"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+
+  DocumentDBClusterEndpoint:
+    Description: "DocumentDB Cluster Endpoint"
+    Value: !GetAtt DocumentDBCluster.Endpoint
